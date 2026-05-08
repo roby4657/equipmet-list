@@ -239,19 +239,23 @@
             ${item["HP 시리얼"] || "-"}
           </div>
 
-          <div class="card-row">
-            <span class="label">
-              HP-2 S/N :
-            </span>
-            ${item["HP-2 S/N"] || "-"}
-          </div>
+         ${item["HP-2 S/N"] ? `
+  <div class="card-row">
+    <span class="label">
+      HP-2 S/N :
+    </span>
+    ${item["HP-2 S/N"]}
+  </div>
+` : ""}
 
-          <div class="card-row">
-            <span class="label">
-              HP-3 S/N :
-            </span>
-            ${item["HP-3 S/N"] || "-"}
-          </div>
+${item["HP-3 S/N"] ? `
+  <div class="card-row">
+    <span class="label">
+      HP-3 S/N :
+    </span>
+    ${item["HP-3 S/N"]}
+  </div>
+` : ""}
 
           <div class="card-row">
             <span class="label">
