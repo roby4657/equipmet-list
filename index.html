@@ -15,6 +15,12 @@
     content="noindex, nofollow"
   >
 
+  <!-- 밝은모드 강제 -->
+  <meta
+    name="color-scheme"
+    content="light"
+  >
+
   <title>Equipment Manager</title>
 
   <style>
@@ -23,10 +29,15 @@
       box-sizing:border-box;
     }
 
+    html,
+    body{
+      background:#f5f5f5 !important;
+      color:#000 !important;
+    }
+
     body{
       margin:0;
       padding:20px;
-      background:#f5f5f5;
       font-family:Arial, sans-serif;
     }
 
@@ -39,13 +50,30 @@
     }
 
     .search-box{
+
       width:100%;
       padding:15px;
       font-size:18px;
+
+      background:#fff;
+      color:#000;
+
       border:none;
       border-radius:12px;
+
       outline:none;
+
+      -webkit-appearance:none;
+      appearance:none;
+
+      -webkit-tap-highlight-color:transparent;
+
       box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .search-box:focus{
+      outline:none;
+      border:none;
     }
 
     .equipment-container{
@@ -74,6 +102,7 @@
       margin-bottom:10px;
       line-height:1.5;
       word-break:break-all;
+      color:#000;
     }
 
     .label{
@@ -85,6 +114,13 @@
       margin-top:50px;
       color:#888;
       font-size:16px;
+      line-height:1.6;
+    }
+
+    .result-count{
+      margin-bottom:10px;
+      color:#666;
+      font-size:14px;
     }
 
     @media(min-width:768px){
@@ -109,6 +145,11 @@
       id="searchInput"
       class="search-box"
       placeholder="계정명 / 장비명 / 시리얼 검색"
+
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
     >
 
   </div>
@@ -119,7 +160,7 @@
   >
 
     <div class="empty-message">
-      검색어를 입력하세요.
+      두 글자 이상 입력하세요.
     </div>
 
   </div>
@@ -167,13 +208,15 @@
 
       container.innerHTML = "";
 
-      // 검색어 없으면 표시 안함
-      if(keyword.trim() === ""){
+      keyword = keyword.trim();
+
+      // 2글자 이상 검색
+      if(keyword.length < 2){
 
         container.innerHTML =
         `
           <div class="empty-message">
-            검색어를 입력하세요.
+            두 글자 이상 입력하세요.
           </div>
         `;
 
@@ -181,14 +224,27 @@
       }
 
       const filtered =
-        equipments.filter(item =>
+        equipments
+          .filter(item =>
 
-          Object.values(item)
+            [
+              item["계정명"],
+              item["장비명"],
+              item["모델"],
+              item["SKU명"],
+              item["장비시리얼"],
+              item["HP 시리얼"],
+              item["HP-2 S/N"],
+              item["HP-3 S/N"]
+            ]
             .join(" ")
             .toLowerCase()
             .includes(keyword.toLowerCase())
 
-        );
+          )
+
+          // 최대 50개만 표시
+          .slice(0, 50);
 
       if(filtered.length === 0){
 
@@ -201,6 +257,18 @@
 
         return;
       }
+
+      // 검색 결과 개수 표시
+      const resultCount =
+        document.createElement("div");
+
+      resultCount.className =
+        "result-count";
+
+      resultCount.innerText =
+        `검색 결과 ${filtered.length}건`;
+
+      container.appendChild(resultCount);
 
       filtered.forEach(item => {
 
@@ -239,23 +307,23 @@
             ${item["HP 시리얼"] || "-"}
           </div>
 
-         ${item["HP-2 S/N"] ? `
-  <div class="card-row">
-    <span class="label">
-      HP-2 S/N :
-    </span>
-    ${item["HP-2 S/N"]}
-  </div>
-` : ""}
+          ${item["HP-2 S/N"] ? `
+            <div class="card-row">
+              <span class="label">
+                HP-2 S/N :
+              </span>
+              ${item["HP-2 S/N"]}
+            </div>
+          ` : ""}
 
-${item["HP-3 S/N"] ? `
-  <div class="card-row">
-    <span class="label">
-      HP-3 S/N :
-    </span>
-    ${item["HP-3 S/N"]}
-  </div>
-` : ""}
+          ${item["HP-3 S/N"] ? `
+            <div class="card-row">
+              <span class="label">
+                HP-3 S/N :
+              </span>
+              ${item["HP-3 S/N"]}
+            </div>
+          ` : ""}
 
           <div class="card-row">
             <span class="label">
@@ -285,7 +353,7 @@ ${item["HP-3 S/N"] ? `
 
     }
 
-    // debounce 적용
+    // debounce
     let debounceTimer;
 
     searchInput.addEventListener(
