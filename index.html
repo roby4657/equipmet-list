@@ -116,7 +116,13 @@
   <div
     id="equipmentContainer"
     class="equipment-container"
-  ></div>
+  >
+
+    <div class="empty-message">
+      검색어를 입력하세요.
+    </div>
+
+  </div>
 
   <script>
 
@@ -135,8 +141,6 @@
 
         equipments =
           await response.json();
-
-        renderList();
 
       }catch(error){
 
@@ -163,6 +167,19 @@
 
       container.innerHTML = "";
 
+      // 검색어 없으면 표시 안함
+      if(keyword.trim() === ""){
+
+        container.innerHTML =
+        `
+          <div class="empty-message">
+            검색어를 입력하세요.
+          </div>
+        `;
+
+        return;
+      }
+
       const filtered =
         equipments.filter(item =>
 
@@ -176,11 +193,11 @@
       if(filtered.length === 0){
 
         container.innerHTML =
-          `
-            <div class="empty-message">
-              검색 결과가 없습니다.
-            </div>
-          `;
+        `
+          <div class="empty-message">
+            검색 결과가 없습니다.
+          </div>
+        `;
 
         return;
       }
@@ -264,11 +281,20 @@
 
     }
 
+    // debounce 적용
+    let debounceTimer;
+
     searchInput.addEventListener(
       "input",
       (e) => {
 
-        renderList(e.target.value);
+        clearTimeout(debounceTimer);
+
+        debounceTimer = setTimeout(() => {
+
+          renderList(e.target.value);
+
+        }, 200);
 
       }
     );
