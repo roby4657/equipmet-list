@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <!-- 검색엔진 노출 방지 -->
+  <meta
+    name="robots"
+    content="noindex, nofollow"
+  >
+
+  <title>Equipment Manager</title>
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      padding:20px;
+      background:#f5f5f5;
+      font-family:Arial, sans-serif;
+    }
+
+    .top-bar{
+      position:sticky;
+      top:0;
+      z-index:100;
+      background:#f5f5f5;
+      padding-bottom:15px;
+    }
+
+    .search-box{
+      width:100%;
+      padding:15px;
+      font-size:18px;
+      border:none;
+      border-radius:12px;
+      outline:none;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .equipment-container{
+      display:flex;
+      flex-direction:column;
+      gap:15px;
+    }
+
+    .equipment-card{
+      background:white;
+      border-radius:14px;
+      padding:20px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .card-header{
+      font-size:18px;
+      font-weight:bold;
+      line-height:1.5;
+      margin-bottom:15px;
+      padding-bottom:10px;
+      border-bottom:1px solid #ddd;
+    }
+
+    .card-row{
+      margin-bottom:10px;
+      line-height:1.5;
+      word-break:break-all;
+    }
+
+    .label{
+      font-weight:bold;
+    }
+
+    .empty-message{
+      text-align:center;
+      margin-top:50px;
+      color:#888;
+      font-size:16px;
+    }
+
+    @media(min-width:768px){
+
+      body{
+        max-width:900px;
+        margin:auto;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="top-bar">
+
+    <input
+      type="text"
+      id="searchInput"
+      class="search-box"
+      placeholder="계정명 / 장비명 / 시리얼 검색"
+    >
+
+  </div>
+
+  <div
+    id="equipmentContainer"
+    class="equipment-container"
+  ></div>
+
+  <script>
+
+    // 구글시트 JSON 주소
+    const SHEET_URL =
+      "https://opensheet.elk.sh/1SPAU86Dk2RwqGHbqiL7LUAKbXyVDmRgtpy-oJZGBEZw/Sheet1";
+
+    let equipments = [];
+
+    async function loadData(){
+
+      try{
+
+        const response =
+          await fetch(SHEET_URL);
+
+        equipments =
+          await response.json();
+
+        renderList();
+
+      }catch(error){
+
+        console.error(error);
+
+        document
+          .getElementById("equipmentContainer")
+          .innerHTML =
+          `
+            <div class="empty-message">
+              데이터를 불러오지 못했습니다.
+            </div>
+          `;
+      }
+    }
+
+    const container =
+      document.getElementById("equipmentContainer");
+
+    const searchInput =
+      document.getElementById("searchInput");
+
+    function renderList(keyword = ""){
+
+      container.innerHTML = "";
+
+      const filtered =
+        equipments.filter(item =>
+
+          Object.values(item)
+            .join(" ")
+            .toLowerCase()
+            .includes(keyword.toLowerCase())
+
+        );
+
+      if(filtered.length === 0){
+
+        container.innerHTML =
+          `
+            <div class="empty-message">
+              검색 결과가 없습니다.
+            </div>
+          `;
+
+        return;
+      }
+
+      filtered.forEach(item => {
+
+        const card =
+          document.createElement("div");
+
+        card.className =
+          "equipment-card";
+
+        card.innerHTML =
+        `
+          <div class="card-header">
+            ${item["계정명"] || "-"} /
+            ${item["장비명"] || "-"} /
+            ${item["모델"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              SKU명 :
+            </span>
+            ${item["SKU명"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              장비시리얼 :
+            </span>
+            ${item["장비시리얼"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              HP 시리얼 :
+            </span>
+            ${item["HP 시리얼"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              HP-2 S/N :
+            </span>
+            ${item["HP-2 S/N"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              HP-3 S/N :
+            </span>
+            ${item["HP-3 S/N"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              생산일자 :
+            </span>
+            ${item["생산일자"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              보증기간 :
+            </span>
+            ${item["보증기간"] || "-"}
+          </div>
+
+          <div class="card-row">
+            <span class="label">
+              비고 :
+            </span>
+            ${item["비고"] || "-"}
+          </div>
+        `;
+
+        container.appendChild(card);
+
+      });
+
+    }
+
+    searchInput.addEventListener(
+      "input",
+      (e) => {
+
+        renderList(e.target.value);
+
+      }
+    );
+
+    loadData();
+
+  </script>
+
+</body>
+</html>
