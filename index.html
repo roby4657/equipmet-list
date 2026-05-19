@@ -4,27 +4,20 @@
 
   <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 검색엔진 노출 방지 -->
-  <meta
-    name="robots"
-    content="noindex, nofollow"
-  >
+  <meta name="robots" content="noindex, nofollow">
 
   <title>Equipment Manager</title>
 
+  <!-- CSV 파서 -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
   <style>
 
-    *{
-      box-sizing:border-box;
-    }
+    *{ box-sizing:border-box; }
 
-    html,
-    body{
+    html, body{
       background:#f5f5f5 !important;
       color:#000 !important;
     }
@@ -44,30 +37,18 @@
     }
 
     .search-box{
-
       width:100%;
       padding:15px;
       font-size:18px;
-
       background:#fff;
       color:#000;
-
       border:none;
       border-radius:12px;
-
       outline:none;
-
       -webkit-appearance:none;
       appearance:none;
-
       -webkit-tap-highlight-color:transparent;
-
       box-shadow:0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .search-box:focus{
-      outline:none;
-      border:none;
     }
 
     .equipment-container{
@@ -108,7 +89,6 @@
       margin-top:50px;
       color:#888;
       font-size:16px;
-      line-height:1.6;
     }
 
     .result-count{
@@ -118,38 +98,10 @@
     }
 
     @media(min-width:768px){
-
       body{
         max-width:900px;
         margin:auto;
       }
-
-    }
-
-    /* 강제 다크모드 대응 */
-
-    @media (prefers-color-scheme: dark) {
-
-      html,
-      body,
-      .top-bar,
-      .equipment-card,
-      .search-box{
-
-        background:#f5f5f5 !important;
-        color:#000 !important;
-
-      }
-
-      .card-row,
-      .card-header,
-      .label,
-      .result-count{
-
-        color:#000 !important;
-
-      }
-
     }
 
   </style>
@@ -159,302 +111,211 @@
 <body>
 
   <div class="top-bar">
-
     <input
       type="text"
       id="searchInput"
       class="search-box"
-
       placeholder="병원명 장비명 시리얼 검색"
-
       autocomplete="off"
       autocorrect="off"
       autocapitalize="off"
       spellcheck="false"
-
       autofocus
     >
-
   </div>
 
-  <div
-    id="equipmentContainer"
-    class="equipment-container"
-  >
-
-    <div class="empty-message">
-      데이터 불러오는 중...
-    </div>
-
+  <div id="equipmentContainer" class="equipment-container">
+    <div class="empty-message">데이터 불러오는 중...</div>
   </div>
 
-  <script>
+<script>
 
-    // 구글시트 JSON 주소
-    const SHEET_URL =
-      "https://opensheet.elk.sh/1SPAU86Dk2RwqGHbqiL7LUAKbXyVDmRgtpy-oJZGBEZw/Sheet1";
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1SPAU86Dk2RwqGHbqiL7LUAKbXyVDmRgtpy-oJZGBEZw/export?format=csv&gid=0";
 
-    let equipments = [];
+let equipments = [];
+let isLoaded = false;
 
-    // 데이터 로딩 상태
-    let isLoaded = false;
+const container = document.getElementById("equipmentContainer");
+const searchInput = document.getElementById("searchInput");
 
-    async function loadData(){
+async function loadData(){
 
-      try{
+  try{
 
-        const response =
-          await fetch(SHEET_URL);
+    const response = await fetch(SHEET_URL,{
+      cache:"force-cache"
+    });
 
-        equipments =
-          await response.json();
+    const csvText = await response.text();
 
-        isLoaded = true;
+    const parsed = Papa.parse(csvText,{
+      header:true,
+      skipEmptyLines:true
+    });
 
-        container.innerHTML =
-        `
-          <div class="empty-message">
-            두 글자 이상 입력하세요.
-          </div>
-        `;
+    equipments = parsed.data.map(item => {
 
-      }catch(error){
+      item._search =
+        [
+          item["계정명"],
+          item["장비명"],
+          item["모델"],
+          item["SKU명"],
+          item["장비시리얼"],
+          item["HP 시리얼"],
+          item["HP-2 S/N"],
+          item["HP-3 S/N"]
+        ]
+        .join(" ")
+        .toLowerCase()
+        .replace(/\s+/g,"");
 
-        console.error(error);
-
-        container.innerHTML =
-        `
-          <div class="empty-message">
-            데이터를 불러오지 못했습니다.
-          </div>
-        `;
-      }
-
-    }
-
-    const container =
-      document.getElementById("equipmentContainer");
-
-    const searchInput =
-      document.getElementById("searchInput");
-
-    function renderList(keyword = ""){
-
-      container.innerHTML = "";
-
-      keyword = keyword.trim();
-
-      // 데이터 로딩 전
-      if(!isLoaded){
-
-        container.innerHTML =
-        `
-          <div class="empty-message">
-            데이터 불러오는 중...
-          </div>
-        `;
-
-        return;
-      }
-
-      // 2글자 이상 검색
-      if(keyword.length < 2){
-
-        container.innerHTML =
-        `
-          <div class="empty-message">
-            두 글자 이상 입력하세요.
-          </div>
-        `;
-
-        return;
-      }
-
-      // 띄어쓰기 기준 AND 검색
-      const keywords =
-        keyword
-          .toLowerCase()
-          .split(" ")
-          .map(k => k.trim())
-          .filter(k => k);
-
-      const filtered =
-        equipments
-          .filter(item => {
-
-            const searchText =
-              [
-                item["계정명"],
-                item["장비명"],
-                item["모델"],
-                item["SKU명"],
-                item["장비시리얼"],
-                item["HP 시리얼"],
-                item["HP-2 S/N"],
-                item["HP-3 S/N"]
-              ]
-              .join(" ")
-              .toLowerCase();
-
-            return keywords.every(k =>
-              searchText.includes(k)
-            );
-
-          })
-
-          // 최대 50개만 표시
-          .slice(0, 50);
-
-      if(filtered.length === 0){
-
-        container.innerHTML =
-        `
-          <div class="empty-message">
-            검색 결과가 없습니다.
-          </div>
-        `;
-
-        return;
-      }
-
-      // 검색 결과 개수 표시
-      const resultCount =
-        document.createElement("div");
-
-      resultCount.className =
-        "result-count";
-
-      resultCount.innerText =
-        `검색 결과 ${filtered.length}건`;
-
-      container.appendChild(resultCount);
-
-      filtered.forEach(item => {
-
-        const card =
-          document.createElement("div");
-
-        card.className =
-          "equipment-card";
-
-        card.innerHTML =
-        `
-          <div class="card-header">
-            ${item["계정명"] || "-"} /
-            ${item["장비명"] || "-"} /
-            ${item["모델"] || "-"}
-          </div>
-
-          <div class="card-row">
-            <span class="label">
-              SKU명 :
-            </span>
-            ${item["SKU명"] || "-"}
-          </div>
-
-          <div class="card-row">
-            <span class="label">
-              장비시리얼 :
-            </span>
-            ${item["장비시리얼"] || "-"}
-          </div>
-
-          <div class="card-row">
-            <span class="label">
-              HP 시리얼 :
-            </span>
-            ${item["HP 시리얼"] || "-"}
-          </div>
-
-          ${item["HP-2 S/N"] ? `
-            <div class="card-row">
-              <span class="label">
-                HP-2 S/N :
-              </span>
-              ${item["HP-2 S/N"]}
-            </div>
-          ` : ""}
-
-          ${item["HP-3 S/N"] ? `
-            <div class="card-row">
-              <span class="label">
-                HP-3 S/N :
-              </span>
-              ${item["HP-3 S/N"]}
-            </div>
-          ` : ""}
-
-          <div class="card-row">
-            <span class="label">
-              생산일자 :
-            </span>
-            ${item["생산일자"] || "-"}
-          </div>
-
-          <div class="card-row">
-            <span class="label">
-              보증기간 :
-            </span>
-            ${item["보증기간"] || "-"}
-          </div>
-
-          <div class="card-row">
-            <span class="label">
-              비고 :
-            </span>
-            ${item["비고"] || "-"}
-          </div>
-        `;
-
-        container.appendChild(card);
-
-      });
-
-    }
-
-    // debounce
-    let debounceTimer;
-
-    searchInput.addEventListener(
-      "input",
-      (e) => {
-
-        clearTimeout(debounceTimer);
-
-        debounceTimer = setTimeout(() => {
-
-          renderList(e.target.value);
-
-        }, 200);
-
-      }
-    );
-
-    // 모바일 autofocus 보조
-    window.addEventListener("load", () => {
-
-      setTimeout(() => {
-
-        searchInput.focus();
-
-      }, 300);
+      return item;
 
     });
 
-    // 첫 터치 시 자동 focus
-    document.addEventListener(
-      "touchstart",
-      () => {
+    isLoaded = true;
 
-        searchInput.focus();
+    container.innerHTML =
+      `<div class="empty-message">두 글자 이상 입력하세요.</div>`;
 
-      },
-      { once:true }
-    );
+  }catch(err){
 
-    loadData();
+    console.error(err);
 
-  </script>
+    container.innerHTML =
+      `<div class="empty-message">데이터를 불러오지 못했습니다.</div>`;
+  }
+}
+
+function renderList(keyword=""){
+
+  container.innerHTML = "";
+
+  keyword = keyword.trim().toLowerCase();
+
+  if(!isLoaded){
+    container.innerHTML =
+      `<div class="empty-message">데이터 불러오는 중...</div>`;
+    return;
+  }
+
+  if(keyword.length < 2){
+    container.innerHTML =
+      `<div class="empty-message">두 글자 이상 입력하세요.</div>`;
+    return;
+  }
+
+  const keywords = keyword
+    .split(" ")
+    .map(k => k.replace(/\s+/g,""))
+    .filter(k => k);
+
+  const filtered = equipments
+    .filter(item =>
+      keywords.every(k =>
+        item._search.includes(k)
+      )
+    )
+    .slice(0,50);
+
+  if(filtered.length === 0){
+    container.innerHTML =
+      `<div class="empty-message">검색 결과가 없습니다.</div>`;
+    return;
+  }
+
+  const resultCount = document.createElement("div");
+  resultCount.className = "result-count";
+  resultCount.innerText = `검색 결과 ${filtered.length}건`;
+  container.appendChild(resultCount);
+
+  filtered.forEach(item => {
+
+    const card = document.createElement("div");
+    card.className = "equipment-card";
+
+    card.innerHTML = `
+      <div class="card-header">
+        ${item["계정명"] || "-"} /
+        ${item["장비명"] || "-"} /
+        ${item["모델"] || "-"}
+      </div>
+
+      <div class="card-row">
+        <span class="label">SKU명 :</span>
+        ${item["SKU명"] || "-"}
+      </div>
+
+      <div class="card-row">
+        <span class="label">장비시리얼 :</span>
+        ${item["장비시리얼"] || "-"}
+      </div>
+
+      <div class="card-row">
+        <span class="label">HP 시리얼 :</span>
+        ${item["HP 시리얼"] || "-"}
+      </div>
+
+      ${item["HP-2 S/N"] ? `
+      <div class="card-row">
+        <span class="label">HP-2 S/N :</span>
+        ${item["HP-2 S/N"]}
+      </div>` : ""}
+
+      ${item["HP-3 S/N"] ? `
+      <div class="card-row">
+        <span class="label">HP-3 S/N :</span>
+        ${item["HP-3 S/N"]}
+      </div>` : ""}
+
+      <div class="card-row">
+        <span class="label">생산일자 :</span>
+        ${item["생산일자"] || "-"}
+      </div>
+
+      <div class="card-row">
+        <span class="label">보증기간 :</span>
+        ${item["보증기간"] || "-"}
+      </div>
+
+      ${item["비고"] ? `
+      <div class="card-row">
+        <span class="label">비고 :</span>
+        ${item["비고"]}
+      </div>` : ""}
+    `;
+
+    container.appendChild(card);
+
+  });
+
+}
+
+let debounceTimer;
+
+searchInput.addEventListener("input", e => {
+
+  clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(() => {
+    renderList(e.target.value);
+  }, 150);
+
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => searchInput.focus(), 100);
+});
+
+document.addEventListener("touchstart", () => {
+  searchInput.focus();
+}, { once:true });
+
+setTimeout(loadData,0);
+
+</script>
 
 </body>
 </html>
