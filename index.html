@@ -105,19 +105,66 @@
       font-size:14px;
     }
 
-    @media(min-width:768px){
-      body{
-        max-width:900px;
-        margin:auto;
-      }
-    }
+.layout{
+  display:block;
+}
+
+.sidebar{
+  display:none;
+}
+
+.main-content{
+  width:100%;
+}
+
+@media(min-width:1200px){
+
+  body{
+    max-width:none;
+    margin:0;
+    padding:20px;
+  }
+
+  .layout{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    gap:20px;
+  }
+
+  .sidebar{
+    display:block;
+    width:220px;
+    position:sticky;
+    top:20px;
+  }
+
+  .sidebar img{
+    width:100%;
+    display:block;
+    border-radius:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+  }
+
+  .main-content{
+    width:900px;
+  }
+
+}
+    
 
   </style>
 
 </head>
 
 <body>
+<div class="layout">
 
+  <aside class="sidebar">
+    <img src="left1.webp" alt="">
+  </aside>
+
+  <main class="main-content">
   <div class="top-bar">
     <input
       type="text"
@@ -324,6 +371,12 @@ document.addEventListener("touchstart", () => {
 setTimeout(loadData,0);
 
 </script>
+  </main>
 
+  <aside class="sidebar">
+    <img src="right1.webp" alt="">
+  </aside>
+
+</div>
 </body>
 </html>
